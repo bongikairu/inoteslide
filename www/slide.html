@@ -1,0 +1,133 @@
+<html>
+	<head>
+		<meta name="viewport" content="initial-scale=1.0,user-scalable=false">
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<script asrc="http://169.254.254.89:8080/target/target-script-min.js#anonymous"></script>
+		<script type="text/javascript" src="assets/js/cordova-2.3.0.js"></script>
+		<script type="text/javascript" src="assets/js/jquery.js"></script>
+		<script type="text/javascript" src="assets/js/jquery.json-2.4.js"></script>
+		<script type="text/javascript" src="assets/js/jstorage.js"></script>
+		<!-- <script type="text/javascript" src="assets/js/jgestures.js"></script> -->
+		<script type="text/javascript" src="assets/js/compatibility.js"></script>
+		<script type="text/javascript" src="assets/js/pdf.js"></script>
+		<script type="text/javascript" src="assets/js/sketch.js"></script>
+		<script type="text/javascript" src="assets/js/boot.js"></script>
+	</head>
+	<body style="background: #444 url(assets/images/background/17.jpg) repeat; margin: 0; padding: 0;">
+		<div style="width: 1024px; height: 748px; position: relative; margin: auto; overflow: hidden;">
+			<div id="canvaser" style="width: 920px; height: 690px; position: absolute; top: 10px; left: 10px; z-index: 5; box-shadow: 0 0 15px rgba(0,0,0,0.8); border-radius: 4px; overflow: scroll; background: white;">
+				<canvas id="canvas_pdf" style="width: 920px; height: 690px; position: absolute; top: 0; left: 0; z-index: 10; border-radius: 4px;"></canvas>
+				<canvas id="canvas_sketch" width="920" height="690" style="width: 920px; height: 690px; position: absolute; top: 0; left: 0; z-index: 40; border-radius: 4px;"></canvas>
+			</div>
+			<div id="navigation" style="width: 920px; height: 48px; position: absolute; bottom: 0; left: 10px; z-index: 60;">
+				<div id="nextslide" style="width: 320px; height: 48px; position: absolute; top: 0; left: 600px; background: rgba(255,255,255,0); text-align: center;">
+					<div style="-webkit-box-sizing: border-box; width: 320px; height: 36px; position: absolute; bottom: 0; left: 0; border-top-left-radius: 36px; border-top-right-radius: 4px; background: -webkit-linear-gradient(top, rgba(122,122,122,1) 0%,rgba(56,56,56,1) 100%); box-shadow: 0 0 5px rgba(0,0,0,0.8); padding-top: 4px;">
+						<img src="assets/images/icon/icon_257.png" style="width: 30px; height: 30px;" />
+					</div>
+				</div>
+				<div id="prevslide" style="width: 320px; height: 48px; position: absolute; top: 0; left: 0px; background: rgba(255,255,255,0); text-align: center;">
+					<div style=" -webkit-box-sizing: border-box;width: 320px; height: 36px; position: absolute; bottom: 0; left: 0; border-top-right-radius: 36px; border-top-left-radius: 4px; background: -webkit-linear-gradient(top, rgba(122,122,122,1) 0%,rgba(56,56,56,1) 100%);  box-shadow: 0 0 5px rgba(0,0,0,0.8); padding-top: 4px;">
+						<img src="assets/images/icon/icon_256.png" style="width: 30px; height: 30px;" />
+					</div>
+				</div>
+				<div style="width: 280px; height: 48px; position: absolute; top: 0; left: 320px;">
+					<div id="zoomtoggle" style="width: 140px; height: 48px; position: absolute; top: 0; left: 0; text-align: center;">
+						<img src="assets/images/icon/icon_183.png" style="margin-top: 16px; width: 30px; height: 30px;" />
+					</div>
+					<div id="thumbnailtoggle" style="width: 140px; height: 48px; position: absolute; top: 0; left: 140px; text-align: center;">
+						<img src="assets/images/icon/icon_127.png" style="margin-top: 16px; width: 30px; height: 30px;" />
+					</div>
+				</div>
+			</div>
+			<div id="kitchensink" style="width: 94px; height: 748px; position: absolute; top: 0; right: 0; z-index: 60;">
+				<style>
+					.control>div {
+						-webkit-transition: all 0.1s ease-in-out;
+						position: absolute;
+						top: 0px;
+						left: 10px;
+						bottom: 0px;
+						right: 10px;
+					}
+					.control_using>div {
+						-webkit-transition: all 0.1s ease-in-out;
+						border-radius: 38px;
+						background: rgba(255,255,255,0.2);
+						box-shadow: inset 0 0 5px #000;
+					}
+				</style>
+				<div id="control_move" class="control" style="width: 94px; height: 76px; position: absolute; top: 10px; left: 0px; text-align: center;">
+					<div>
+						<img src="assets/images/icon/icon_039.png" style="margin-top: 25px; width: 30px; height: 30px;" />
+					</div>
+				</div>
+
+				<div id="control_pen" class=" control control_using" style="width: 94px; height: 76px; position: absolute; top: 86px; left: 0px; text-align: center;">
+					<div>
+						<img src="assets/images/icon/icon_166.png" style="margin-top: 25px; width: 30px; height: 30px;" />
+					</div>
+				</div>
+				<div id="control_highlight" class=" control" style="width: 94px; height: 76px; position: absolute; top: 152px; left: 0px; text-align: center;">
+					<div>
+						<img src="assets/images/icon/icon_176.png" style="margin-top: 25px; width: 30px; height: 30px;" />
+					</div>
+				</div>
+				<div id="control_color" class=" control" style="width: 94px; height: 30px; position: absolute; top: 246px; left: 0px; text-align: center;">
+					<div>
+						<div id="control_color_current" style="width: 20px; height: 20px; margin-top: 5px; margin-left: 25px; background: darkblue; border: 1px solid white; border-radius: 8px;"></div>
+					</div>
+				</div>
+				<div id="control_size" class=" control" style="width: 94px; height: 30px; position: absolute; top: 296px; left: 0px; text-align: center;">
+					<div>
+						<div id="control_size_current" style="width: 5px; height: 5px; margin-top: 7.5px; margin-left: 33px; background: white; border-radius: 2.5px;"></div>
+					</div>
+				</div>
+
+				<div id="control_eraser" class=" control" style="width: 94px; height: 76px; position: absolute; top: 346px; left: 0px; text-align: center;">
+					<div>
+						<img src="assets/images/icon/icon_153.png" style="margin-top: 25px; width: 30px; height: 30px;" />
+					</div>
+				</div>
+
+				<div id="control_stamp" class=" control" style="width: 94px; height: 76px; position: absolute; top: 422px; left: 0px; text-align: center;">
+					<div>
+						<img src="assets/images/icon/icon_215.png" style="margin-top: 25px; width: 30px; height: 30px;" />
+					</div>
+				</div>
+				<div id="control_note" class=" control" style="width: 94px; height: 76px; position: absolute; top: 498px; left: 0px; text-align: center;">
+					<div>
+						<img src="assets/images/icon/icon_104.png" style="margin-top: 25px; width: 30px; height: 30px;" />
+					</div>
+				</div>
+			</div>
+
+			<div id="sink_color" style="width: 80px; height: 122px; position: absolute; top: 210px; right: -90px; background: #333; z-index: 999; border-top-left-radius: 10px; border-bottom-left-radius: 10px; padding: 5px;">
+				<div class="cpicker" style="width: 25px; height: 25px; margin-top: 10px; margin-left: 10px; background: #030D80; border: 1px solid white; border-radius: 8px; float: left;" data-color="#030D80"></div>
+				<div class="cpicker" style="width: 25px; height: 25px; margin-top: 10px; margin-left: 10px; background: #ED0707; border: 1px solid white; border-radius: 8px; float: left;" data-color="#ED0707"></div>
+				<div style="clear: both"></div>
+				<div class="cpicker" style="width: 25px; height: 25px; margin-top: 10px; margin-left: 10px; background: #00BA10; border: 1px solid white; border-radius: 8px; float: left;" data-color="#00BA10"></div>
+				<div class="cpicker" style="width: 25px; height: 25px; margin-top: 10px; margin-left: 10px; background: #F29B05; border: 1px solid white; border-radius: 8px; float: left;" data-color="#F29B05"></div>
+				<div style="clear: both"></div>
+				<div class="cpicker" style="width: 25px; height: 25px; margin-top: 10px; margin-left: 10px; background: #058FF2; border: 1px solid white; border-radius: 8px; float: left;" data-color="#058FF2"></div>
+				<div class="cpicker" style="width: 25px; height: 25px; margin-top: 10px; margin-left: 10px; background: #FF59BF; border: 1px solid white; border-radius: 8px; float: left;" data-color="#FF59BF"></div>
+				<div style="clear: both"></div>
+			</div>
+
+			<div id="sink_size" style="width: 80px; height: 122px; position: absolute; top: 210px; right: -90px; background: #333; z-index: 999; border-top-left-radius: 10px; border-bottom-left-radius: 10px; padding: 5px;">
+				<div class="spicker" data-size="2" style="width: 25px; height: 25px; margin-top: 10px; margin-left: 10px; float: left;"><div style="width: 2px; height: 2px; margin: 11.5px; background: white; border-radius: 1px;"></div></div>
+				<div class="spicker" data-size="5" style="width: 25px; height: 25px; margin-top: 10px; margin-left: 10px; float: left;"><div style="width: 5px; height: 5px; margin: 10px; background: white; border-radius: 2.5px;"></div></div>
+				<div style="clear: both"></div>
+
+				<div class="spicker" data-size="8" style="width: 25px; height: 25px; margin-top: 10px; margin-left: 10px; float: left;"><div style="width: 8px; height: 8px; margin: 8.5px; background: white; border-radius: 4px;"></div></div>
+				<div class="spicker" data-size="12" style="width: 25px; height: 25px; margin-top: 10px; margin-left: 10px; float: left;"><div style="width: 12px; height: 12px; margin: 6.5px; background: white; border-radius: 6px;"></div></div>
+				<div style="clear: both"></div>
+
+				<div class="spicker" data-size="16" style="width: 25px; height: 25px; margin-top: 10px; margin-left: 10px; float: left;"><div style="width: 16px; height: 16px; margin: 4.5px; background: white; border-radius: 8px;"></div></div>
+				<div class="spicker" data-size="20" style="width: 25px; height: 25px; margin-top: 10px; margin-left: 10px; float: left;"><div style="width: 20px; height: 20px; margin: 2.5px; background: white; border-radius: 10px;"></div></div>
+				<div style="clear: both"></div>
+
+			</div>
+
+		</div>
+	</body>
+</html>
