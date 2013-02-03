@@ -49,7 +49,15 @@ var __slice = Array.prototype.slice;
 			this.action = [];
 			this.zoom = false;
 			this.paintedcb = null;
-			this.stampname = 'important.png';
+			this.stampname = 'important';
+
+			this.stamps = {
+				important: new Image(),
+				inexam: new Image(),
+			}
+
+			this.stamps["important"].src = 'assets/images/stamp/important.png';
+
 			this.canvas.bind('click mousedown mouseup mousemove mouseleave mouseout touchstart touchmove touchend touchcancel', this.onEvent);
 			if (this.options.toolLinks) {
 				$('body').delegate("a[href=\"#" + (this.canvas.attr('id')) + "\"]", 'click', function(e) {
@@ -251,12 +259,23 @@ var __slice = Array.prototype.slice;
 			var oldcolor = $.sketch.color;
 			$.sketch.color = $.sketch.stampname;
 			$.sketch.tools.marker.onEvent.call(this, e);
-			$.sketch.stopPainting();
+			//this.stopPainting();
 			$.sketch.color = oldcolor;
 			return;
 		},
 		draw: function(action) {
-			console.log('drawing stamp');
+			//console.log('drawing stamp');
+
+			var simg = this.stamps["important"];
+
+			var sheight = simg.height;
+			var swidth = simg.width;
+
+			var sc = 1.0;
+			if(this.zoom) sc=2.0;
+			
+			this.context.drawImage(simg,action.events[0].x*sc-(0.5*swidth*sc), action.events[0].y*sc -(0.5*sheight*sc) ,swidth*sc,sheight*sc);
+
 			return;
 		}
 	};
