@@ -50,6 +50,7 @@ var __slice = Array.prototype.slice;
 			this.zoom = false;
 			this.paintedcb = null;
 			this.stampname = 'important';
+			this.cbGetStampType = null;
 
 			this.stamps = {
 				important: new Image(),
@@ -57,6 +58,7 @@ var __slice = Array.prototype.slice;
 			}
 
 			this.stamps["important"].src = 'assets/images/stamp/important.png';
+			this.stamps["important"].onload = this.redraw();
 
 			this.canvas.bind('click mousedown mouseup mousemove mouseleave mouseout touchstart touchmove touchend touchcancel', this.onEvent);
 			if (this.options.toolLinks) {
@@ -256,17 +258,29 @@ var __slice = Array.prototype.slice;
 
 	$.sketch.tools.stamp = {
 		onEvent: function(e) {
-			var oldcolor = $.sketch.color;
-			$.sketch.color = $.sketch.stampname;
-			$.sketch.tools.marker.onEvent.call(this, e);
-			//this.stopPainting();
-			$.sketch.color = oldcolor;
+
+			if(e.type=='mousedown' || e.type=='touchstart') {
+				var oldcolor = this.color;
+				if(this.cbGetStampType) this.cbGetStampType(e);
+				this.color = this.stampname;
+				//console.log(this.color);
+				$.sketch.tools.marker.onEvent.call(this, e);
+				//this.stopPainting();
+				this.color = oldcolor;
+			} else {
+				$.sketch.tools.marker.onEvent.call(this, e);
+			}
+			
 			return;
 		},
 		draw: function(action) {
 			//console.log('drawing stamp');
 
-			var simg = this.stamps["important"];
+			//console.log(action);
+
+			var simg = this.stamps[action.color];
+
+			if(!simg) return;
 
 			var sheight = simg.height;
 			var swidth = simg.width;
@@ -274,7 +288,9 @@ var __slice = Array.prototype.slice;
 			var sc = 1.0;
 			if(this.zoom) sc=2.0;
 			
-			this.context.drawImage(simg,action.events[0].x*sc-(0.5*swidth*sc), action.events[0].y*sc -(0.5*sheight*sc) ,swidth*sc,sheight*sc);
+			var aelen = action.events.length;
+
+			this.context.drawImage(simg,action.events[aelen-1].x*sc-(0.5*swidth*sc), action.events[aelen-1].y*sc -(0.5*sheight*sc) ,swidth*sc,sheight*sc);
 
 			return;
 		}

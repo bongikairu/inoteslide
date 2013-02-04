@@ -14,18 +14,24 @@ slide_note = [];
 
 note_filename = '';
 
+thumb_drawn = false;
+
 function saveNote() {
 	console.log('saving note to slide_note[]');
 	console.log(board.sketch('painting'));
 	if(board.sketch('painting')) board.sketch('stopPainting');
-	slide_note[current_slide] = {drawing: board.sketch('actions'), text: ""};
+	console.log($('#textnote textarea').val());
+	slide_note[current_slide] = {drawing: board.sketch('actions'), text: $('#textnote textarea').val()};
 	var canvas = document.getElementById('canvas_sketch');
 	var ctx = canvas.getContext('2d');
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	board.sketch('actions',[]);
+	$('#textnote textarea').val('');
 }
 function loadNote() {
+	//console.log(slide_note);
 	if(slide_note[current_slide]) {
+		$('#textnote textarea').val(slide_note[current_slide].text);
 		var canvas = document.getElementById('canvas_sketch');
 		var ctx = canvas.getContext('2d');
 		//var image = new Image();
@@ -53,41 +59,6 @@ function loadSlidePage() {
 	slide_data.getPage(current_slide).then(function(page) {
 		var scale = 2.0;
 		var viewport = page.getViewport(scale);
-
-		/*
-		var hscale = viewport.height / 690;
-		var wscale = viewport.width / 920;
-
-		console.log(hscale);
-		console.log(wscale);
-
-		if(hscale>1 && wscale<=1) {
-			scale = 690 / viewport.height;
-		} else if(wscale>1 && hscale<=1) {
-			scale = 920 / viewport.width;
-		} else if(wscale<=1 && hscale<=1) {
-			if(wscale>hscale) {
-				scale = 920 / viewport.width;
-			} else {
-				scale = 690 / viewport.height;
-			}
-		} else if(wscale>1 && hscale>1) {
-			if(wscale>hscale) {
-				scale = 920 / viewport.width;
-			} else {
-				scale = 690 / viewport.height;
-			}
-		}
-
-		scale = 1;
-		console.log(scale);
-
-		viewport = page.getViewport(scale);
-	
-		*/
-
-		//viewport.height = 690;
-		//viewport.width = 920;
 
 		//
 		// Prepare canvas using PDF page dimensions
@@ -211,10 +182,98 @@ function saveNoteFile() {
 
 }
 
+var stamping = false;
+
+function onstampstart(evt) {
+	stamping = true;
+	//console.log(evt);
+	// calculating which stamp to use
+	board.sketch('stampname','unknown');
+	$('#stampchooser img').each(function() {
+		var mx = evt.pageX - board.sketch('canvas').offset().left;
+		var my = evt.pageY - board.sketch('canvas').offset().top;
+		var sx = $(this).offset().left - $('#stampchooser').offset().left;
+		var sy = $(this).offset().top - $('#stampchooser').offset().top;
+		var sw = $(this).width();
+		var sh = $(this).height();
+
+		console.log(mx + ' ' + my);
+		console.log(sx + '+' + sw + ' , ' + sy + '+' + sh);
+
+		if(mx>=sx && mx<=sx+sw && my>=sy && my<=sy+sh) {
+			console.log('using '+$(this).attr('data-stampname')+' stamp');
+			board.sketch('stampname',$(this).attr('data-stampname'));
+		}
+
+	});
+	$('#stampchooser').fadeOut('fast');
+}
+
+function onstampend() {
+	$('#control_move').click();
+}
+
 function onsketchend() {
+	if(stamping) onstampend();
 	saveNote();
 	loadNote();
 	saveNoteFile();
+}
+
+function drawThumbnailet(numpage) {
+	var tdiv = $('<div></div>').addClass('slidethumbdiv');
+	var tcanvas = $('<canvas></canvas>').addClass('slidethumb').attr('data-slideno',numpage);
+
+	tdiv.append(tcanvas);
+	$('#thumb_chooser').append(tdiv);
+
+	slide_data.getPage(numpage).then(function(page) {
+		var scale = 0.3;
+		var viewport = page.getViewport(scale);
+
+		//
+		// Prepare canvas using PDF page dimensions
+		//
+		var canvas = tcanvas.get(0);
+		var $canvas = tcanvas;
+		var context = canvas.getContext('2d');
+		canvas.height = viewport.height;
+		canvas.width = viewport.width;
+
+		//
+		// Render PDF page into canvas context
+		//
+		var renderContext = {
+			canvasContext: context,
+			viewport: viewport
+		};
+		page.render(renderContext).then(function() {
+			if(numpage<max_slide) drawThumbnailet(numpage+1);
+			else {
+				$('#thumbloadimg').hide('slow');
+				$('.slidethumb').click(function() {
+					saveNote();
+					saveNoteFile();	// intercept to save
+					current_slide = $(this).attr('data-slideno');
+					loadSlide();
+					$('#canvas_sketch').css({
+						height: 690,
+						width: 920,
+					});
+					board.sketch('zoom',false);
+					loadNote();
+					zooming = false;
+					$('#thumb_marker').click();
+				});
+			}
+		});
+		
+	});
+}
+
+function drawThumbnail() {
+	thumb_drawn = true;
+	drawThumbnailet(1);
 }
 
 ks_state = 0;
@@ -245,6 +304,8 @@ $(function() {
 	board = $('#canvas_sketch').sketch({defaultColor: "#030D80",defaultSize: 5});
 
 	board.sketch('paintedcb',onsketchend);
+
+	board.sketch('cbGetStampType',onstampstart);
 
 	$('#kitchencontrol').click(function() {
 		if(ks_state==0) {
@@ -332,6 +393,7 @@ $(function() {
 	}
 
 	$('#zoomtoggle').click(function() {
+		$('#stampchooser').fadeOut('fast');
 		if(zooming_animing) return;
 		zooming_animing = true;
 		if(zooming==false) {
@@ -344,8 +406,8 @@ $(function() {
 	//$.jGestures.defaults.thresholdPinchopen = 0.2;
 	//$.jGestures.defaults.thresholdPinchclose = 0.2;
 
-	$('#canvaser').on('pinchopen',function(e,obj) {
-		var fings=obj.description.split(":")[1];
+	$('#canvaser').on('pinchopen',function() {
+		//var fings=obj.description.split(":")[1];
 		//alert(obj.description);
 		//alert(fings);
 		if(zooming_animing) return;
@@ -357,8 +419,8 @@ $(function() {
 			zooming_animing = false;
 		}
 	});
-	$('#canvaser').on('pinchclose',function(e,obj) {
-		var fings=obj.description.split(":")[1];
+	$('#canvaser').on('pinchclose',function() {
+		//var fings=obj.description.split(":")[1];
 		//alert(obj.description);
 		//alert(fings);
 		if(zooming_animing) return;
@@ -383,6 +445,7 @@ $(function() {
 		board.sketch('handtool',true);
 		$('.control').removeClass('control_using');
 		$(this).addClass('control_using');
+		$('#stampchooser').fadeOut('fast');
 	});
 	$('#control_pen').click(function() {
 		console.log('using pen');
@@ -413,36 +476,78 @@ $(function() {
 		board.sketch('handtool',false);
 		$('.control').removeClass('control_using');
 		$(this).addClass('control_using');
+		$('#stampchooser').fadeIn('fast');
+		$('#canvaser').trigger('pinchclose');
 		board.sketch('tool','stamp');
 	});
 	$('#control_color').click(function() {
 		console.log('using color');
 		$('#sink_color').animate({right: 0},100);
+		$('#stampchooser').fadeOut('fast');
 	});
 	$('#sink_color .cpicker').click(function() {
 		board.sketch('color',$(this).attr('data-color'));
 		$('#control_color_current').css('background-color',$(this).attr('data-color'));
 		$('#sink_color').animate({right: -90},100);
+		$('#stampchooser').fadeOut('fast');
 	});
   	$('#control_size').click(function() {
 		console.log('using size');
 		$('#sink_size').animate({right: 0},100);
+		$('#stampchooser').fadeOut('fast');
 	});
 	$('#sink_size .spicker').click(function() {
 		board.sketch('size',$(this).attr('data-size'));
 		$('#control_size_current').css('width',$(this).attr('data-size')).css('height',$(this).attr('data-size')).css('border-radius',$(this).attr('data-size')*0.5).css('margin-left',35.5-($(this).attr('data-size')*0.5));
 		$('#sink_size').animate({right: -90},100);
+		$('#stampchooser').fadeOut('fast');
 	});
 
 	$('#control_note').click(function() {
 		console.log('using note');
+		$('#stampchooser').fadeOut('fast');
 		$('#textnote').slideDown('slow');
 		$('#textnote_marker').fadeIn('slow',function(){
 			$(this).click(function() {
+				saveNote();
+				saveNoteFile();
+				loadNote();
 				$(this).fadeOut('slow');
 				$('#textnote').blur().slideUp('slow');
 			});
 			$('#textnote').focus();
+		});
+	});
+
+	$('#textnote textarea').bind('input propertychange',function() {
+		var ttext = $(this).val()
+		var tlen = ttext.length;
+
+		if(tlen%10==5) {
+			// save note
+			saveNote();
+			saveNoteFile();
+			loadNote();
+		}
+	});
+
+	$('#control_menu').click(function() {
+		// back to library
+		window.location.href = 'library.html';
+	});
+
+	$('#thumbnailtoggle').click(function() {
+		console.log('showing thumbnail');
+		$('#stampchooser').fadeOut('fast');
+		$('#thumb_chooser').fadeIn('slow');
+		$('#thumb_marker').fadeIn('slow',function(){
+			if(thumb_drawn==false) {
+				drawThumbnail();
+			}
+			$(this).click(function() {
+				$(this).fadeOut('slow');
+				$('#thumb_chooser').fadeOut('slow');
+			});
 		});
 	});
 
