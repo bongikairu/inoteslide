@@ -55,10 +55,17 @@ var __slice = Array.prototype.slice;
 			this.stamps = {
 				important: new Image(),
 				inexam: new Image(),
+				star: new Image(),
 			}
 
 			this.stamps["important"].src = 'assets/images/stamp/important.png';
 			this.stamps["important"].onload = this.redraw();
+
+			this.stamps["inexam"].src = 'assets/images/stamp/inexam.png';
+			this.stamps["inexam"].onload = this.redraw();
+
+			this.stamps["star"].src = 'assets/images/stamp/star.png';
+			this.stamps["star"].onload = this.redraw();
 
 			this.canvas.bind('click mousedown mouseup mousemove mouseleave mouseout touchstart touchmove touchend touchcancel', this.onEvent);
 			if (this.options.toolLinks) {

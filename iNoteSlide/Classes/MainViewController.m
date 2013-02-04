@@ -160,10 +160,10 @@ UIWebView* webView;
     if(recognizer.state == UIGestureRecognizerStateRecognized)
     {
         if(recognizer.numberOfTouches==2) {
-            if(recognizer.scale>0.2) {
+            if(recognizer.velocity>recognizer.scale) {
                 NSLog(@"pinch out with 2 fingers");
                 [webView stringByEvaluatingJavaScriptFromString:@"$('#canvaser').trigger('pinchopen')"];
-            } else if(recognizer.scale<-0.2) {
+            } else if(recognizer.velocity<-recognizer.scale) {
                 NSLog(@"pinch in with 2 fingers");
                 [webView stringByEvaluatingJavaScriptFromString:@"$('#canvaser').trigger('pinchclose')"];
             }

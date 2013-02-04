@@ -214,7 +214,7 @@ function onstampend() {
 }
 
 function onsketchend() {
-	if(stamping) onstampend();
+	if(stamping && board.sketch('tool')=='stamp') onstampend();
 	saveNote();
 	loadNote();
 	saveNoteFile();
