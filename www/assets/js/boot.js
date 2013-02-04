@@ -18,7 +18,7 @@ function saveNote() {
 	console.log('saving note to slide_note[]');
 	console.log(board.sketch('painting'));
 	if(board.sketch('painting')) board.sketch('stopPainting');
-	slide_note[current_slide] = board.sketch('actions');
+	slide_note[current_slide] = {drawing: board.sketch('actions'), text: ""};
 	var canvas = document.getElementById('canvas_sketch');
 	var ctx = canvas.getContext('2d');
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -30,7 +30,7 @@ function loadNote() {
 		var ctx = canvas.getContext('2d');
 		//var image = new Image();
 		//image.src = slide_note[current_slide];
-		acts = slide_note[current_slide];
+		acts = slide_note[current_slide].drawing;
 		//ctx.drawImage(image, 0, 0);
 		board.sketch('actions',acts);
 		//board.sketch('preimg',image);
@@ -408,6 +408,13 @@ $(function() {
 		board.sketch('tool','highlight');
 		$('.spicker[data-size=16]').click();
 	});
+	$('#control_stamp').click(function() {
+		console.log('using stamp');
+		board.sketch('handtool',false);
+		$('.control').removeClass('control_using');
+		$(this).addClass('control_using');
+		board.sketch('tool','stamp');
+	});
 	$('#control_color').click(function() {
 		console.log('using color');
 		$('#sink_color').animate({right: 0},100);
@@ -425,6 +432,18 @@ $(function() {
 		board.sketch('size',$(this).attr('data-size'));
 		$('#control_size_current').css('width',$(this).attr('data-size')).css('height',$(this).attr('data-size')).css('border-radius',$(this).attr('data-size')*0.5).css('margin-left',35.5-($(this).attr('data-size')*0.5));
 		$('#sink_size').animate({right: -90},100);
+	});
+
+	$('#control_note').click(function() {
+		console.log('using note');
+		$('#textnote').slideDown('slow');
+		$('#textnote_marker').fadeIn('slow',function(){
+			$(this).click(function() {
+				$(this).fadeOut('slow');
+				$('#textnote').blur().slideUp('slow');
+			});
+			$('#textnote').focus();
+		});
 	});
 
     loadSlide();
