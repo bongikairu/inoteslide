@@ -161,13 +161,36 @@ a{
 }
 
 	    </style>
+
+<script>
+	$(document).ready(function(){
+		//http://ins.nb.tl/api/login
+		
+
+		$("#loginform").submit(function(e){
+
+			var servName="http://"+$("#server").val();
+			console.log(servName);
+		$.post(servName+"/api/login", {username:$("#username").val() ,password:$("#password").val()},
+		  function(data){
+		    alert("Data Loaded: " + data);
+		  });
+			//alert("asdf");
+			e.preventDefault();
+			return false;
+		});
+	});
+	
+</script>
+
 	</head>
 	<body style="background: #444 url(assets/images/background/17.jpg) repeat; margin: 0; padding: 0;">
 		<div style="width: 1024px; height: 748px; position: relative; margin: auto; overflow: hidden; background:#FFF;background: #444 url(assets/images/loginBG.png);  ">
-	      <form class="form-signin">
+	      <form class="form-signin" id="loginform" action="#">
 	        <h2 class="form-signin-heading">Please sign in</h2>
-	        <input type="text" class="input-block-level" placeholder="Email address">
-	        <input type="password" class="input-block-level" placeholder="Password">
+	        <input type="text" class="input-block-level" placeholder="Username" id="username">
+	        <input type="password" class="input-block-level" placeholder="Password" id="password">
+	        <input type="text" class="input-block-level" placeholder="Server" value="ins.nb.tl" id="server">
 	        <br/>
 	        <label class="checkbox">
 	          <input type="checkbox" value="remember-me"> Remember me
