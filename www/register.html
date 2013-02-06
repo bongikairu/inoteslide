@@ -7,7 +7,6 @@
 		<script type="text/javascript" src="assets/js/jquery.js"></script>
 		<script type="text/javascript" src="assets/js/jquery.json-2.4.js"></script>
 		<script type="text/javascript" src="assets/js/jstorage.js"></script>
-		<script type="text/javascript" src="assets/js/boot-lib.js"></script>
 	    <style type="text/css">
 			body{
 				font-family: Segoe UI;
@@ -163,31 +162,63 @@ a{
 	    </style>
 
 <script>
+
+	function disableForm() {
+		$("#registerForm *").attr('disabled','disabled');
+	}
+	function enableForm() {
+		$("#registerForm *").removeAttr('disabled');
+	}
+
 	$(document).ready(function(){
 		//http://ins.nb.tl/api/login
-		servName="http://"+$.jStorage.get("server", "ins.nb.tl");
+		var servName = $.jStorage.get('servName','http://ins.nb.tl');
+
+		console.log(servName);
 		
-
 		$("#registerForm").submit(function(e){
+			disableForm();
 
-			var servName="http://"+$("#server").val();
-			console.log(servName);
-		$.get(servName+"/api/regis", 
-			{
-				username:$("#username").val() ,
-				password:$("#password").val()},
-				retypepassword:$("#retypepassword").val(),
-				displayName:$("#displayName").val(),
-				facebookID:$("#facebookID").val(),
-				email:$("#email").val()
-			},
-		  function(data){
-		    alert("Data Loaded: " + data);
-		  });
-			//alert("asdf");
+			console.log('talking to server');
+			$('#loginmsg').html("Registering");
+			$.ajax({
+				url: servName+"/api/regis",
+				type: 'POST',
+				data: {
+					username:$("#username").val() ,
+					password:$("#password").val(),
+					retypepassword:$("#retypepassword").val(),
+					displayName:$("#displayName").val(),
+					facebookID:$("#facebookID").val(),
+					email:$("#email").val()
+				},
+			}).done(function(data,status,jqxhr) {
+				console.log('Server response');
+				//$(this).addClass("done");
+				if(data.data===true) {
+					// server response login ok
+					//console.log('Login OK');
+                    $('#loginmsg').html("Register complete, please login");
+                    //$.jStorage.set('user',data.data);
+                    setTimeout(function() {
+                            window.location.href = "login.html";
+                    },2000);
+				} else {
+					console.log('Login Fail');
+                    $('#loginmsg').html("Register failed, "+data.data.desc);
+                    enableForm();
+				}
+			}).fail(function(jqxhr,status,error) {
+				// Can't connect to server
+				console.log("Can't connect to server");
+				console.log(error);
+                $('#loginmsg').html("Can't connect to server");
+                enableForm();
+			});
 			e.preventDefault();
 			return false;
 		});
+
 	});
 	
 </script>
@@ -196,13 +227,13 @@ a{
 	<body style="background: #444 url(assets/images/background/17.jpg) repeat; margin: 0; padding: 0;">
 		<div style="width: 1024px; height: 748px; position: relative; margin: auto; overflow: hidden; background:#FFF;background: #444 url(assets/images/loginBG.png);  ">
 	      <form class="form-signin" id="registerForm">
-	        <h2 class="form-signin-heading">Register</h2>
-	        <input type="text" class="input-block-level" placeholder="Username" name="username">
-	        <input type="password" class="input-block-level" placeholder="Password" name="password">
-	        <input type="password" class="input-block-level" placeholder="Retype Password" name="retypepassword">
-	        <input type="text" class="input-block-level" placeholder="Display Name" name="displayName">
-	        <input type="text" class="input-block-level" placeholder="Facebook" name="facebookID">
-	        <input type="text" class="input-block-level" placeholder="Email" name="email">
+	        <h2 id="loginmsg" class="form-signin-heading">Register</h2>
+	        <input type="text" class="input-block-level" placeholder="Username" id="username">
+	        <input type="password" class="input-block-level" placeholder="Password" id="password">
+	        <input type="password" class="input-block-level" placeholder="Retype Password" id="retypepassword">
+	        <input type="text" class="input-block-level" placeholder="Display Name" id="displayName">
+	        <input type="text" class="input-block-level" placeholder="Facebook" id="facebookID">
+	        <input type="text" class="input-block-level" placeholder="Email" id="email">
 	        <br/>
 	        
 	        <button class="btn btn-large btn-primary" type="submit">Register</button>

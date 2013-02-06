@@ -250,7 +250,7 @@ function drawThumbnailet(numpage) {
 		page.render(renderContext).then(function() {
 			if(numpage<max_slide) drawThumbnailet(numpage+1);
 			else {
-				$('#thumbloadimg').hide('slow');
+				$('#thumbloadimg').fadeOut('slow');
 				$('.slidethumb').click(function() {
 					saveNote();
 					saveNoteFile();	// intercept to save

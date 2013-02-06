@@ -1,3 +1,16 @@
+
+var user = null;
+var servName = null;
+
+var courses = {
+	accepted: [],
+	pending: [],
+};
+
+var slides = {};
+
+var files = {};
+
 function onDeviceReady() {
 	console.log("device is ready");
 	window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
@@ -157,11 +170,218 @@ function dirReady(entry) {
 
 }
 
+function bindLogout() {
+	$('#logoutbtn').click(function() {
+		$.jStorage.deleteKey('user');
+		$( "#dialog-working" ).dialog({
+			height: 140,
+			modal: true
+		});
+		$.ajax({
+			url: servName+'/api/logout',
+			success: function() {
+				window.location.href = "login.html";
+			},
+			error: function() {
+				window.location.href = "login.html";
+			}
+		});
+	});
+}
 
+function openSlide() {
+	var $div = $(this);
+	var s = $div.data('sdata');
+}
+
+function makeSlidelistWList(subject) {
+	$sdiv = $('#slidelist').html("");
+	var slist = slides[subject._id];
+	for(var i=0;i<slist.length;i++) {
+		var s = slist[i].slideId;
+		$idiv = $('<div></div>').html(s.title);
+		$odiv = $('<div></div>').addClass('img-polaroid');
+		$odiv.data('sdata',s);
+		$odiv.click(openSlide);
+		$odiv.append($idiv);
+		$sdiv.append($odiv);
+	}
+	if(slist.length==0) {
+		$idiv = $('<div></div>').html('This course has no slide');
+		$odiv = $('<div></div>').addClass('img-polaroid');
+		$odiv.append($idiv);
+		$sdiv.append($odiv);
+	}
+}
+
+function makeSlidelist(subject) {
+	$sdiv = $('#slidelist').html("");
+	// <div class="img-polaroid"><div>
+	//		Computer Programming by Java language
+	// </div></div>
+	if(subject) {
+		// try requesting latest slide list
+		$( "#dialog-working" ).dialog({
+			height: 140,
+			modal: true
+		});
+		$.ajax({
+			url: servName+'/api/listslide/'+subject._id,
+			success: function(data) {
+				if(data.data==false) return window.location.href = "login.html";
+				slides[subject._id] = data.data;
+				$.jStorage.set('slides',slides);
+				makeSlidelistWList(subject);
+				$("#dialog-working").dialog('destroy');
+			},
+			error: function() {
+				if(slides[subject._id]) makeSlidelistWList(subject);
+				else {
+					$idiv = $('<div></div>').html("Can't get list of slide of this subject");
+					$odiv = $('<div></div>').addClass('img-polaroid');
+					$odiv.append($idiv);
+					$sdiv.append($odiv);
+				}
+				$("#dialog-working").dialog('destroy');
+			}
+		});
+	} else {
+		$idiv = $('<div></div>').html('Select course to see its slide');
+		$odiv = $('<div></div>').addClass('img-polaroid gotoslide');
+		$odiv.append($idiv);
+		$sdiv.append($odiv);
+	}
+}
+
+function makeSlidelistCB() {
+	makeSlidelist(courses.accepted[$(this).attr('data-cacceptedid')]);
+}
+
+function makeCourselist() {
+	var $list = $('#courselist');
+	$list.html("");
+
+	var ccount = 0;
+
+	for(var i=0;i<courses.accepted.length;i++) {
+		var c = courses.accepted[i];
+		var $div = $('<div></div>');
+		$div.css({
+			'border' : '1px solid #CACACA',
+			'padding' : '2px',
+			'background' : '#FFF',
+			'padding' : '10px',
+		}).html(c.subjectName).attr('data-subjectid',c._id).attr('data-cacceptedid',i);
+		$div.click(makeSlidelistCB);
+		$list.append($div);
+		ccount++;
+	}
+
+	for(var i=0;i<courses.pending.length;i++) {
+		var c = courses.pending[i];
+		var $div = $('<div></div>');
+		$div.css({
+			'border' : '1px solid #CACACA',
+			'padding' : '2px',
+			'background' : '#FFF',
+			'padding' : '10px',
+		}).html(c.subjectName + " [Pending]");
+		$list.append($div);
+		ccount++;
+	}
+
+	if(ccount==0) {
+		var $div = $('<div></div>');
+		$div.css({
+			'border' : '1px solid #CACACA',
+			'padding' : '2px',
+			'background' : '#FFF',
+			'padding' : '10px',
+		}).html("Use [Find courses] to get start!!");
+		$list.append($div);
+	}
+
+	//<div style="border:1px solid #CACACA; padding:2px; background:#FFF; padding:10px;">
+	//							asdf
+	//						</div>
+
+}
+
+function reloadCourselist() {
+	$( "#dialog-working" ).dialog({
+		height: 140,
+		modal: true
+	});
+	$.ajax({
+		url: servName+'/api/listsubject',
+		success: function(data) {
+			if(data.data==false) return window.location.href = "login.html";
+			var cdata = data.data;
+			courses.accepted = cdata.accepted;
+			courses.pending = cdata.pending;
+			$.jStorage.set('courses',courses);
+			makeCourselist();
+			$("#dialog-working").dialog('destroy');
+		},
+		error: function() {
+			$("#dialog-working").dialog('destroy');
+		}
+	});
+}
 
 var start = function(){
+
+	user = $.jStorage.get('user',{displayName: "Error, please logout and relogin"});
+	servName = $.jStorage.get('servName');
+	courses = $.jStorage.get('courses',{accepted:[],pending:[]});
+	slides = $.jStorage.get('slides',{});
+	files = $.jStorage.get('files',{});
+
+	bindLogout();
+	$('#reloadcourse').click(reloadCourselist);
+
+	makeCourselist();
+	makeSlidelist(null);
+
+	$('#userDisplayName').html(user.displayName);
+
 	window.appRootDirName = ".inoteslide";
 	document.addEventListener("deviceready", onDeviceReady, false);
+
+	setTimeout(function() { $.ajax({
+			url: servName+"/api/info",
+			type: 'GET',
+		}).done(function(data,status,jqxhr) {
+			console.log('Server response');
+			//$(this).addClass("done");
+			if(data.data) {
+				// server response login ok
+				console.log('Login OK');
+                //$('#loginmsg').html("Logged in, preparing library");
+                //$.jStorage.set('user',data.data);
+                //setTimeout(function() {
+                //        window.location.href = "library.html";
+                //},1000);
+			} else {
+				console.log('Login Fail');
+                //$('#loginmsg').html("Please sign in");
+                //enableForm();
+			}
+		}).fail(function(jqxhr,status,error) {
+			// Can't connect to server
+			console.log("Can't connect to server " + servName);
+			console.log(error);
+			if($.jStorage.get('user')) {
+				//$('#loginmsg').html("Logged in offline mode, preparing library");
+				//setTimeout(function() {
+                //        window.location.href = "library.html";
+                //},1000);
+			} else {
+				//$('#loginmsg').html("Can't connect to server");
+				//enableForm();
+			}
+		}); },500);
+
 };
 
 $(start);

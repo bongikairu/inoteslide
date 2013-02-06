@@ -176,11 +176,16 @@ a{
 		$('#server').val(servName);
 		//http://ins.nb.tl/api/login
 
+		$('#server').change(function() {
+			servName = $("#server").val();
+			$.jStorage.set('servName',servName);
+		});
+
 		$('#loginmsg').html("Checking current session, stand by");
 		disableForm();
-		$.ajax({
+		setTimeout(function() { $.ajax({
 			url: servName+"/api/info",
-			type: 'POST',
+			type: 'GET',
 		}).done(function(data,status,jqxhr) {
 			console.log('Server response');
 			//$(this).addClass("done");
@@ -199,10 +204,18 @@ a{
 			}
 		}).fail(function(jqxhr,status,error) {
 			// Can't connect to server
-			console.log("Can't connect to server");
-            $('#loginmsg').html("Can't connect to server");
-            enableForm();
-		});
+			console.log("Can't connect to server " + servName);
+			console.log(error);
+			if($.jStorage.get('user')) {
+				$('#loginmsg').html("Logged in offline mode, preparing library");
+				setTimeout(function() {
+                        window.location.href = "library.html";
+                },1000);
+			} else {
+				$('#loginmsg').html("Can't connect to server");
+				enableForm();
+			}
+		}); },500);
 
 
 		$("#loginform").submit(function(e){
@@ -211,6 +224,7 @@ a{
 			servName = $("#server").val();
 			$.jStorage.set('servName',servName);
 			console.log('talking to server');
+			$('#loginmsg').html("Logging In");
 			$.ajax({
 				url: servName+"/api/login",
 				type: 'POST',
