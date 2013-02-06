@@ -125,6 +125,11 @@ UIWebView* webView;
     swipeRecognizer2.numberOfTouchesRequired = 3;
     [self.view addGestureRecognizer:swipeRecognizer2];
     
+    //UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapped:)];
+    //tapRecognizer.numberOfTapsRequired = 2;
+    //tapRecognizer.numberOfTouchesRequired = 2;
+    //[self.view addGestureRecognizer:tapRecognizer];
+    
     //UIPinchGestureRecognizer *pinchRecognizer = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(pinched:)];
     //[self.view addGestureRecognizer:pinchRecognizer];
     
@@ -155,15 +160,25 @@ UIWebView* webView;
     if(recognizer.state == UIGestureRecognizerStateRecognized)
     {
         if(recognizer.numberOfTouches==2) {
-            if(recognizer.scale>0.2) {
+            if(recognizer.velocity>recognizer.scale) {
                 NSLog(@"pinch out with 2 fingers");
                 [webView stringByEvaluatingJavaScriptFromString:@"$('#canvaser').trigger('pinchopen')"];
-            } else if(recognizer.scale<-0.2) {
+            } else if(recognizer.velocity<-recognizer.scale) {
                 NSLog(@"pinch in with 2 fingers");
                 [webView stringByEvaluatingJavaScriptFromString:@"$('#canvaser').trigger('pinchclose')"];
             }
         }
         
+    }
+}
+
+- (void)tapped:(UISwipeGestureRecognizer *)recognizer
+{
+    if(recognizer.state == UIGestureRecognizerStateRecognized)
+    {
+        // got a three-finger swipe
+        NSLog(@"double tap with 2 fingers");
+        [webView stringByEvaluatingJavaScriptFromString:@"$('#zoomtoggle').click()"];
     }
 }
 
