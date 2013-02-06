@@ -56,6 +56,9 @@ var __slice = Array.prototype.slice;
 				important: new Image(),
 				inexam: new Image(),
 				star: new Image(),
+				heart: new Image(),
+				lightbulb: new Image(),
+				skull: new Image(),
 			}
 
 			this.stamps["important"].src = 'assets/images/stamp/important.png';
@@ -66,6 +69,15 @@ var __slice = Array.prototype.slice;
 
 			this.stamps["star"].src = 'assets/images/stamp/star.png';
 			this.stamps["star"].onload = this.redraw();
+
+			this.stamps["heart"].src = 'assets/images/stamp/heart.png';
+			this.stamps["heart"].onload = this.redraw();
+
+			this.stamps["lightbulb"].src = 'assets/images/stamp/lightbulb.png';
+			this.stamps["lightbulb"].onload = this.redraw();
+
+			this.stamps["skull"].src = 'assets/images/stamp/skull.png';
+			this.stamps["skull"].onload = this.redraw();
 
 			this.canvas.bind('click mousedown mouseup mousemove mouseleave mouseout touchstart touchmove touchend touchcancel', this.onEvent);
 			if (this.options.toolLinks) {

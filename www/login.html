@@ -7,7 +7,6 @@
 		<script type="text/javascript" src="assets/js/jquery.js"></script>
 		<script type="text/javascript" src="assets/js/jquery.json-2.4.js"></script>
 		<script type="text/javascript" src="assets/js/jstorage.js"></script>
-		<script type="text/javascript" src="assets/js/boot-lib.js"></script>
 	    <style type="text/css">
 			body{
 				font-family: Segoe UI;
@@ -17,7 +16,7 @@
 	      .form-signin {
 	        max-width: 300px;
 	        padding: 19px 29px 29px;
-	        margin: 230px auto 20px;
+	        margin: 180px auto 20px;
 	        opacity: 0.8;
 	        background-color: #fff;
 	        border: 1px solid #e5e5e5;
@@ -163,22 +162,84 @@ a{
 	    </style>
 
 <script>
+
+	function disableForm() {
+		$("#loginform *").attr('disabled','disabled');
+	}
+	function enableForm() {
+		$("#loginform *").removeAttr('disabled');
+	}
+
 	$(document).ready(function(){
+
+		var servName = $.jStorage.get('servName','http://ins.nb.tl');
+		$('#server').val(servName);
 		//http://ins.nb.tl/api/login
-		var servName="http://"+$("#server").val();
-		
+
+		$('#loginmsg').html("Checking current session, stand by");
+		disableForm();
+		$.ajax({
+			url: servName+"/api/info",
+			type: 'POST',
+		}).done(function(data,status,jqxhr) {
+			console.log('Server response');
+			//$(this).addClass("done");
+			if(data.data) {
+				// server response login ok
+				console.log('Login OK');
+                $('#loginmsg').html("Logged in, preparing library");
+                $.jStorage.set('user',data.data);
+                setTimeout(function() {
+                        window.location.href = "library.html";
+                },1000);
+			} else {
+				console.log('Login Fail');
+                $('#loginmsg').html("Please sign in");
+                enableForm();
+			}
+		}).fail(function(jqxhr,status,error) {
+			// Can't connect to server
+			console.log("Can't connect to server");
+            $('#loginmsg').html("Can't connect to server");
+            enableForm();
+		});
+
 
 		$("#loginform").submit(function(e){
-
-			
-			console.log(servName);
-			$.post(servName+"/api/login", {username:$("#username").val() ,password:$("#password").val()},
-			  function(data){
-			    alert("Data Loaded: " + data);
-			    $.jStorage.set("server", servName, {TTL: 10000});
-			  });
-
-			//alert("asdf");
+			disableForm();
+			// saving new servName
+			servName = $("#server").val();
+			$.jStorage.set('servName',servName);
+			console.log('talking to server');
+			$.ajax({
+				url: servName+"/api/login",
+				type: 'POST',
+				data: {
+					username:$("#username").val(),
+					password:$("#password").val()
+				},
+			}).done(function(data,status,jqxhr) {
+				console.log('Server response');
+				//$(this).addClass("done");
+				if(data.data) {
+					// server response login ok
+					console.log('Login OK');
+                    $('#loginmsg').html("Logged in, preparing library");
+                    $.jStorage.set('user',data.data);
+                    setTimeout(function() {
+                            window.location.href = "library.html";
+                    },1000);
+				} else {
+					console.log('Login Fail');
+                    $('#loginmsg').html("Bad username or password");
+                    enableForm();
+				}
+			}).fail(function(jqxhr,status,error) {
+				// Can't connect to server
+				console.log("Can't connect to server");
+                $('#loginmsg').html("Can't connect to server");
+                enableForm();
+			});
 			e.preventDefault();
 			return false;
 		});
@@ -190,16 +251,18 @@ a{
 	<body style="background: #444 url(assets/images/background/17.jpg) repeat; margin: 0; padding: 0;">
 		<div style="width: 1024px; height: 748px; position: relative; margin: auto; overflow: hidden; background:#FFF;background: #444 url(assets/images/loginBG.png);  ">
 	      <form class="form-signin" id="loginform" action="#">
-	        <h2 class="form-signin-heading">Please sign in</h2>
+	        <h2 id="loginmsg" class="form-signin-heading">Please sign in</h2>
 	        <input type="text" class="input-block-level" placeholder="Username" id="username">
 	        <input type="password" class="input-block-level" placeholder="Password" id="password">
-	        <input type="text" class="input-block-level" placeholder="Server" value="ins.nb.tl" id="server">
 	        <br/>
-	        <label class="checkbox">
-	          <input type="checkbox" value="remember-me"> Remember me
-	        </label><br/>
 	        <button class="btn btn-large btn-primary" type="submit">Sign in</button>
-	        <a href="#">Register</a>
+	        <a href="register.html">Register</a>
+	        <br />
+	        <br />
+	        <br />
+	        <br />
+	        <br />
+	        <input type="text" class="input-block-level" placeholder="Server" value="" id="server">
 	      </form>
 		</div>
 		
