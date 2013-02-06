@@ -165,16 +165,19 @@ a{
 <script>
 	$(document).ready(function(){
 		//http://ins.nb.tl/api/login
+		var servName="http://"+$("#server").val();
 		
 
 		$("#loginform").submit(function(e){
 
-			var servName="http://"+$("#server").val();
+			
 			console.log(servName);
-		$.post(servName+"/api/login", {username:$("#username").val() ,password:$("#password").val()},
-		  function(data){
-		    alert("Data Loaded: " + data);
-		  });
+			$.post(servName+"/api/login", {username:$("#username").val() ,password:$("#password").val()},
+			  function(data){
+			    alert("Data Loaded: " + data);
+			    $.jStorage.set("server", servName, {TTL: 10000});
+			  });
+
 			//alert("asdf");
 			e.preventDefault();
 			return false;
