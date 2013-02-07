@@ -163,6 +163,8 @@ a{
 
 <script>
 
+	$.ajaxSetup({ cache: false });
+
 	function disableForm() {
 		$("#loginform *").attr('disabled','disabled');
 	}
@@ -219,6 +221,14 @@ a{
 
 
 		$("#loginform").submit(function(e){
+
+			if(servName=="reloadme") {
+				alert('Flushing data');
+				$.jStorage.flush();
+				window.location.href = "login.html?1";
+				return false;
+			}
+
 			disableForm();
 			// saving new servName
 			servName = $("#server").val();

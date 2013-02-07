@@ -1,3 +1,4 @@
+$.ajaxSetup({ cache: false });
 
 var user = null;	// with session
 var servName = null;	// with session
@@ -13,13 +14,15 @@ var slides = {};	// with session
 
 var files = {};		// with session
 
+var notes = {};		// with session
+
 function onDeviceReady() {
 	console.log("device is ready");
 	window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
 	
 	//window.webkitStorageInfo.requestQuota(PERSISTENT, 1024*1024*100, function(grantedBytes) {
 		//window.requestFileSystem(PERSISTENT, grantedBytes, onInitFs, errorHandler);
-		window.requestFileSystem(PERSISTENT, 0, gotFS, fail);
+		window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, gotFS, fail);
 	//}, function(e) {
 	//	console.log('Error', e);
 	//});
@@ -43,14 +46,14 @@ function downloadPDF(url, success, err){
 	console.log('download pdf ' + url);
 	
 	var fileName = new Date().getTime() + ".pdf";
-	superfname = fileName;
+	//superfname = fileName;
 	ft = new FileTransfer();
 	ft.download(
 	    url,
 	    window.appRootDir.fullPath + "/" + fileName,
 	    function(entry) {
 	        console.log("download complete: " + entry.fullPath);
-	        success(entry.fullPath);
+	        success(fileName);
 	    },
 	    function(error) {
 	        console.log("download error source " + error.source);
@@ -64,7 +67,9 @@ function downloadPDF(url, success, err){
 function dirReady(entry) {
 	window.appRootDir = entry;
 	//console.log(JSON.stringify(window.appRootDir));	
+}
 
+/*
 	console.log($.jStorage.get('date'));
 
 	//$.jStorage.set('date',new Date().getTime());
@@ -177,6 +182,7 @@ function dirReady(entry) {
 	});
 
 }
+*/
 
 function bindLogout() {
 	$('#logoutbtn').click(function() {
@@ -188,18 +194,167 @@ function bindLogout() {
 		$.ajax({
 			url: servName+'/api/logout',
 			success: function() {
+				console.log('logged out');
 				window.location.href = "login.html";
 			},
 			error: function() {
+				alert("Logout error");
 				window.location.href = "login.html";
 			}
 		});
 	});
 }
 
+function openNote(fname,nname) {
+
+	keptname = fname;
+	
+	var fpath = keptname;
+	var npath = keptname + '.note.' + nname + '.json';
+
+	console.log('retrieving note');
+
+	window.appRootDir.getFile(npath, {create: true}, function(fe) {
+		// ok
+		console.log('note got');
+		fe.file(function(file) {
+			// ok
+			console.log('reading it');
+
+			var loadSlide = function(ndata) {
+				$.jStorage.set('targetSlide',{
+						realname: fpath,
+						filename: fpath,
+						filepath: window.appRootDir.fullPath + '/' + fpath,
+						notename: npath,
+						notepath: window.appRootDir.fullPath + '/' + npath,
+						notedata: ndata,
+					});
+
+			        console.log($.jStorage.get('targetSlide').filename);
+
+			        console.log('changing page');
+
+					window.location.href = 'slide.html';
+			};
+
+			if(file.size==0) {
+				// blank file
+				loadSlide([]);
+			} else {
+				// got content
+				$.ajax({
+					url: file.fullPath,
+					success: function(data) {
+						//console.log('get data ' + data);
+
+						console.log("read success");
+
+						var ndata = data;
+
+				        console.log('parsing note data');
+
+				        //console.log(JSON);
+
+				        try {
+				        	ndataobj = $.evalJSON(ndata);
+				        } catch(e) {
+				        	console.log(e);
+				        }
+
+				        loadSlide(ndataobj.notedata);
+
+				        //console.log(ndataobj);
+
+					},
+					error: function(jq,txt,err) {
+						console.log('error reading: '+txt+' - '+err);
+						console.log(jq);
+					}
+				});
+			}
+
+		}, function() {
+			// fail, what?
+		});
+	}, function() {
+		// fail, do nothing la gun
+		console.log("can't find note");
+	});
+}
+
 function openSlide() {
-	var $div = $(this);
-	var s = $div.data('sdata');
+	var $tdiv = $(this);
+	var s = $tdiv.data('sdata');
+
+	var $div = $('<div></div>').attr('title',s.title).css('display','none');
+
+	if(files[s._id]) {
+		// has file
+		$idiv = $('<div></div>').html("<h2>Select note for this slide</h2>");
+		$ondiv = $('<div></div>').html('');
+		if(notes[s._id]) {
+			$ondiv.append('<ul>');
+			var ss = notes[s._id];
+			if(ss) for(var i=0;i<ss.length;i++) {
+				var $li = $('<li></li>').html(ss[i].title).data('fname',files[s._id]).data('nname',ss[i].filename).click(function() {
+					var fname = $(this).data('fname');
+					var nname = $(this).data('nname');
+					console.log('opening '+fname+' . '+nname);
+					openNote(fname,nname);
+				});
+				$ondiv.append($li);
+			}
+			$ondiv.append('</ul>');
+		}
+		$nndiv = $('<div></div>').html('<h3>Create new note</h3>').click(function() {
+			var nname = Math.random().toString(36).substr(2, 5);
+			var fname = files[s._id];
+			var title = prompt("Please enter note name","Note "+(new Date()).toUTCString());
+			if(!notes[s._id]) notes[s._id] = [];
+			notes[s._id].push({title: title,filename: nname});
+			$.jStorage.set('notes',notes);
+			console.log('opening '+fname+' . '+nname);
+			openNote(files[s._id],nname);
+		});
+		$dndiv = $('<div></div>').html("<h3>Download Online Note</h3>");
+
+		$div.append($idiv);
+		$div.append($ondiv);
+		$div.append($nndiv);
+		$div.append($dndiv);
+
+	} else {
+		// don't have file
+		$idiv = $('<div></div>').html("<h2>You have to download slide before reading</h2><p>Tap here to start download</p>").click(function() {
+			// start download
+			$div.dialog('destroy');
+			$( "#dialog-working" ).dialog({
+				height: 140,
+				modal: true
+			});
+			var url = servName + "/api/downloadslide/"+s._id;
+			downloadPDF(url,function(fullpath){
+				files[s._id] = fullpath;
+				$.jStorage.set('files',files);
+				$( "#dialog-working" ).dialog('destroy');
+				$tdiv.click();
+				//$.jStorage.set('testfilename',superfname);
+				//alert('download complete');
+			},function(){
+				// download error
+				$( "#dialog-working" ).dialog('destroy');
+				alert('Download Error');
+			});
+		});
+		$div.append($idiv);
+	}
+
+	$div.dialog({
+		height: 500,
+		width: 800,
+		modal: true
+	});
 }
 
 function makeSlidelistWList(subject) {
@@ -208,14 +363,14 @@ function makeSlidelistWList(subject) {
 	for(var i=0;i<slist.length;i++) {
 		var s = slist[i].slideId;
 		$idiv = $('<div></div>').html(s.title);
-		$odiv = $('<div></div>').addClass('img-polaroid');
+		$odiv = $('<div></div>').addClass('img-polaroid').css('color','darkblue');
 		$odiv.data('sdata',s);
 		$odiv.click(openSlide);
 		$odiv.append($idiv);
 		$sdiv.append($odiv);
 	}
 	if(slist.length==0) {
-		$idiv = $('<div></div>').html('This course has no slide');
+		$idiv = $('<div></div>').html('This course has no slide').css('color','darkred');
 		$odiv = $('<div></div>').addClass('img-polaroid');
 		$odiv.append($idiv);
 		$sdiv.append($odiv);
@@ -245,7 +400,7 @@ function makeSlidelist(subject) {
 			error: function() {
 				if(slides[subject._id]) makeSlidelistWList(subject);
 				else {
-					$idiv = $('<div></div>').html("Can't get list of slide of this subject");
+					$idiv = $('<div></div>').html("Can't get list of slide of this subject").css('color','red');
 					$odiv = $('<div></div>').addClass('img-polaroid');
 					$odiv.append($idiv);
 					$sdiv.append($odiv);
@@ -254,7 +409,7 @@ function makeSlidelist(subject) {
 			}
 		});
 	} else {
-		$idiv = $('<div></div>').html('Select course to see its slide');
+		$idiv = $('<div></div>').html('Select course to see its slide').css('color','darkgreen');
 		$odiv = $('<div></div>').addClass('img-polaroid gotoslide');
 		$odiv.append($idiv);
 		$sdiv.append($odiv);
@@ -273,6 +428,7 @@ function makeCourselist() {
 
 	for(var i=0;i<courses.accepted.length;i++) {
 		var c = courses.accepted[i];
+		if(!c) continue;
 		var $div = $('<div></div>');
 		$div.css({
 			'border' : '1px solid #CACACA',
@@ -287,6 +443,7 @@ function makeCourselist() {
 
 	for(var i=0;i<courses.pending.length;i++) {
 		var c = courses.pending[i];
+		if(!c) continue;
 		var $div = $('<div></div>');
 		$div.css({
 			'border' : '1px solid #CACACA',
@@ -349,12 +506,14 @@ function makeEnrollWindow() {
 		$idiv.data('sid',id);
 		var listed = false;
 		for(var j=0;j<courses.accepted.length;j++) {
+			if(!courses.accepted[j]) continue;
 			if(courses.accepted[j]._id==id) {
 				listed = true;
 				$idiv.append(' [Enrolled]').css('color','blue');
 			}
 		}
 		for(var j=0;j<courses.pending.length;j++) {
+			if(!courses.pending[j]) continue;
 			if(courses.pending[j]._id==id) {
 				listed = true;
 				$idiv.append(' [Pending]').css('color','darkgreen');
@@ -431,6 +590,7 @@ var start = function(){
 	courses = $.jStorage.get('courses',{accepted:[],pending:[]});
 	slides = $.jStorage.get('slides',{});
 	files = $.jStorage.get('files',{});
+	notes = $.jStorage.get('notes',{});
 
 	bindLogout();
 	bindReload();

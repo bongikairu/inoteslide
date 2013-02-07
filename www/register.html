@@ -163,6 +163,8 @@ a{
 
 <script>
 
+	$.ajaxSetup({ cache: false });
+
 	function disableForm() {
 		$("#registerForm *").attr('disabled','disabled');
 	}
