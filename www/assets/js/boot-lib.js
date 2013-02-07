@@ -1,20 +1,28 @@
 
-var user = null;
-var servName = null;
+var user = null;	// with session
+var servName = null;	// with session
 
-var courses = {
+var allcourses = null;
+
+var courses = {		// with session
 	accepted: [],
 	pending: [],
 };
 
-var slides = {};
+var slides = {};	// with session
 
-var files = {};
+var files = {};		// with session
 
 function onDeviceReady() {
 	console.log("device is ready");
 	window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
-	window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, gotFS, fail);
+	
+	//window.webkitStorageInfo.requestQuota(PERSISTENT, 1024*1024*100, function(grantedBytes) {
+		//window.requestFileSystem(PERSISTENT, grantedBytes, onInitFs, errorHandler);
+		window.requestFileSystem(PERSISTENT, 0, gotFS, fail);
+	//}, function(e) {
+	//	console.log('Error', e);
+	//});
 }
 
 function fail() {
@@ -55,7 +63,7 @@ function downloadPDF(url, success, err){
 
 function dirReady(entry) {
 	window.appRootDir = entry;
-	console.log(JSON.stringify(window.appRootDir));	
+	//console.log(JSON.stringify(window.appRootDir));	
 
 	console.log($.jStorage.get('date'));
 
@@ -67,13 +75,13 @@ function dirReady(entry) {
 	url = "http://www.cp.eng.chula.ac.th/~somchai/2110101/Lectures/pdf1/101-12.pdf";
 
 	if(!superfname) {
-		alert('downloading test file');
+		//alert('downloading test file');
 		downloadPDF(url,function(){
 			$.jStorage.set('testfilename',superfname);
 			alert('download complete');
 		},function(){});
 	} else {
-		alert('old file still there to be used');
+		//alert('old file still there to be used');
 	}
 
     $('.reloadslide').click(function() {
@@ -228,7 +236,7 @@ function makeSlidelist(subject) {
 		$.ajax({
 			url: servName+'/api/listslide/'+subject._id,
 			success: function(data) {
-				if(data.data==false) return window.location.href = "login.html";
+				if(data.data===false) return window.location.href = "login.html";
 				slides[subject._id] = data.data;
 				$.jStorage.set('slides',slides);
 				makeSlidelistWList(subject);
@@ -315,7 +323,7 @@ function reloadCourselist() {
 	$.ajax({
 		url: servName+'/api/listsubject',
 		success: function(data) {
-			if(data.data==false) return window.location.href = "login.html";
+			if(data.data===false) return window.location.href = "login.html";
 			var cdata = data.data;
 			courses.accepted = cdata.accepted;
 			courses.pending = cdata.pending;
@@ -329,6 +337,93 @@ function reloadCourselist() {
 	});
 }
 
+function makeEnrollWindow() {
+	var $div = $('<div></div>').attr('title','Available Courses').css('display','none');
+
+	for(var i=0;i<allcourses.length;i++) {
+		var c = allcourses[i];
+		var $idiv = $('<div></div>').css({
+			'padding' : '10px',
+		}).html("["+c.code+"] "+c.subjectName+" - " + c.privacy);
+		var id = c._id;
+		$idiv.data('sid',id);
+		var listed = false;
+		for(var j=0;j<courses.accepted.length;j++) {
+			if(courses.accepted[j]._id==id) {
+				listed = true;
+				$idiv.append(' [Enrolled]').css('color','blue');
+			}
+		}
+		for(var j=0;j<courses.pending.length;j++) {
+			if(courses.pending[j]._id==id) {
+				listed = true;
+				$idiv.append(' [Pending]').css('color','darkgreen');
+			}
+		}
+		if(!listed) {
+			$idiv.click(function() {
+				$div.dialog('destroy');
+				console.log('joining course '+$(this).data('sid'));
+				$( "#dialog-working" ).dialog({
+					height: 140,
+					modal: true
+				});
+				$.ajax({
+					url: servName+'/api/enrollsubject/'+$(this).data('sid'),
+					success: function(data) {
+						if(data.data===false) return window.location.href = "login.html";
+						console.log('enrolled');
+						console.log(data);
+						$("#dialog-working").dialog('destroy');
+						$('#reloadcourse').click();
+					},
+					error: function() {
+						console.log('enroll failed');
+						$("#dialog-working").dialog('destroy');
+					}
+				});
+			});
+		}
+
+		$div.append($idiv);
+	}
+
+	$div.dialog({
+		height: 500,
+		width: 800,
+		modal: true
+	});
+}
+
+function doFindcourse() {
+	$( "#dialog-working" ).dialog({
+		height: 140,
+		modal: true
+	});
+	console.log('Getting all course list');
+	$.ajax({
+		url: servName+'/api/listallsubject',
+		success: function(data) {
+			if(data.data===false) return window.location.href = "login.html";
+			allcourses = data.data;
+			//console.log(data);
+			makeEnrollWindow();
+			$("#dialog-working").dialog('destroy');
+		},
+		error: function() {
+			$("#dialog-working").dialog('destroy');
+		}
+	});
+}
+
+function bindFindcourse() {
+	$('#findcourse').click(doFindcourse);
+}
+
+function bindReload() {
+	$('#reloadcourse').click(reloadCourselist);
+}
+
 var start = function(){
 
 	user = $.jStorage.get('user',{displayName: "Error, please logout and relogin"});
@@ -338,7 +433,8 @@ var start = function(){
 	files = $.jStorage.get('files',{});
 
 	bindLogout();
-	$('#reloadcourse').click(reloadCourselist);
+	bindReload();
+	bindFindcourse();
 
 	makeCourselist();
 	makeSlidelist(null);
@@ -348,39 +444,9 @@ var start = function(){
 	window.appRootDirName = ".inoteslide";
 	document.addEventListener("deviceready", onDeviceReady, false);
 
-	setTimeout(function() { $.ajax({
-			url: servName+"/api/info",
-			type: 'GET',
-		}).done(function(data,status,jqxhr) {
-			console.log('Server response');
-			//$(this).addClass("done");
-			if(data.data) {
-				// server response login ok
-				console.log('Login OK');
-                //$('#loginmsg').html("Logged in, preparing library");
-                //$.jStorage.set('user',data.data);
-                //setTimeout(function() {
-                //        window.location.href = "library.html";
-                //},1000);
-			} else {
-				console.log('Login Fail');
-                //$('#loginmsg').html("Please sign in");
-                //enableForm();
-			}
-		}).fail(function(jqxhr,status,error) {
-			// Can't connect to server
-			console.log("Can't connect to server " + servName);
-			console.log(error);
-			if($.jStorage.get('user')) {
-				//$('#loginmsg').html("Logged in offline mode, preparing library");
-				//setTimeout(function() {
-                //        window.location.href = "library.html";
-                //},1000);
-			} else {
-				//$('#loginmsg').html("Can't connect to server");
-				//enableForm();
-			}
-		}); },500);
+	runningInPcBrowser = navigator.userAgent.indexOf('Chrome')  >= 0;
+
+	if(runningInPcBrowser) onDeviceReady();
 
 };
 

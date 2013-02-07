@@ -12,10 +12,9 @@
 		<script src="assets/js/boot-lib.js" type="text/javascript"></script>
 		<link href="assets/css/smoothness/jquery-ui-1.10.0.custom.css" rel="stylesheet" />
 		<style>
-			<![CDATA[
-				.ui-dialog-titlebar-close {
+				/* .ui-dialog-titlebar-close {
 					display: none;
-				}
+				} */
 				
 				.img-polaroid {
 				  padding: 4px;
@@ -142,9 +141,6 @@
 				filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#ededed', endColorstr='#ffffff');
 				}
 				
-				
-				
-				]]>
 		</style>
 		<title></title>
 	</head>
@@ -186,7 +182,7 @@
 						</div>
 						<div style="background: #FFF; border: 1px solid #CACACA; border-top: none; font-size: 12px; overflow: scroll; padding: 2px 2px 2px 10px; width: 256px;">
 							<br />
-							<a class="button white medium" href="#">Find courses</a><br /><br />
+							<a class="button white medium" href="#" id="findcourse">Find courses</a><br /><br />
 							<!-- <a class="button white medium" href="#">Manage Online File</a><br /><br />
 							<a class="button white medium" href="#">Manage Offline File</a><br /><br /> -->
 							<a class="button rosy medium" href="#" id="logoutbtn" name="logoutbtn">Logout</a><br /><br />
@@ -206,7 +202,7 @@
 			</div>
 			<img src="assets/images/foot.png" />
 		</div>
-		<div id="dialog-working" title="Working">
+		<div id="dialog-working" title="Working" style="display: none">
 			<p>Please wait while we work</p>
 		</div>
 	</body>

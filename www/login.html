@@ -205,7 +205,7 @@ a{
 		}).fail(function(jqxhr,status,error) {
 			// Can't connect to server
 			console.log("Can't connect to server " + servName);
-			console.log(error);
+			console.log(jqxhr);
 			if($.jStorage.get('user')) {
 				$('#loginmsg').html("Logged in offline mode, preparing library");
 				setTimeout(function() {
@@ -215,7 +215,7 @@ a{
 				$('#loginmsg').html("Can't connect to server");
 				enableForm();
 			}
-		}); },500);
+		}); },1000);
 
 
 		$("#loginform").submit(function(e){
