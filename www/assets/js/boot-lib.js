@@ -64,6 +64,29 @@ function downloadPDF(url, success, err){
 	);
 }
 
+function downloadNote(url, slidename, notename, success, err){
+	console.log('download pdf ' + url);
+	
+	//var fileName = new Date().getTime() + ".pdf";
+	var fileName = slidename + '.note.' + notename + '.json';
+	//superfname = fileName;
+	ft = new FileTransfer();
+	ft.download(
+	    url,
+	    window.appRootDir.fullPath + "/" + fileName,
+	    function(entry) {
+	        console.log("download complete: " + entry.fullPath);
+	        success(fileName);
+	    },
+	    function(error) {
+	        console.log("download error source " + error.source);
+	        console.log("download error target " + error.target);
+	        console.log("upload error code" + error.code);
+	        err(error);
+	    }
+	);
+}
+
 function dirReady(entry) {
 	window.appRootDir = entry;
 	//console.log(JSON.stringify(window.appRootDir));	
@@ -411,12 +434,68 @@ function openSlide() {
 			console.log('opening '+fname+' . '+nname);
 			openNote(files[s._id],nname);
 		});
-		$dndiv = $('<div></div>').html("<h3>Download Online Note</h3>");
+		$lndiv = $('<div></div>');
+		$dndiv = $('<div></div>').html("<h3>Download Online Note</h3>").data('sid',s._id).click(function() {
+			var sid = $(this).data('sid');
+			$.ajax({
+				url: servName+'/api/listnote/'+sid,
+				success: function(data) {
+					if(data.data===false) return window.location.href = "login.html";
+					var nlist = data.own.concat(data.other);
+					var $ul = $('<ul></ul>');
+					for(var i=0; i<nlist.length;i++) {
+						var creator = nlist[i].createBy;
+						if(creator._id==user._id) continue;
+						if(creator==user._id) creator=user;
+						var $li = $('<li></li>').html(creator.displayName + "'s Note").data('creator',creator.displayName).data('sid',s._id).data('noteid',nlist[i]._id).click(function() {
+							var sid = $(this).data('sid');
+							var noteid = $(this).data('noteid');
+							var creator = $(this).data('creator');
+							var url = servName + '/api/downloadnote/'+noteid;
+							var notename = Math.random().toString(36).substr(2, 5);
+							$div.dialog('destroy');
+							$( "#dialog-working" ).dialog({
+								height: 140,
+								modal: true
+							});
+							downloadNote(url,files[sid],notename,function(fullpath){
+								if(!notes[sid]) notes[sid] = [];
+								notes[sid].push({
+									title: creator + "'s Note",
+									filename: notename,
+								});
+								$.jStorage.set('notes',notes);
+								//files[s._id] = fullpath;
+								//$.jStorage.set('files',files);
+								$( "#dialog-working" ).dialog('destroy');
+								$tdiv.click();
+								//$.jStorage.set('testfilename',superfname);
+								//alert('download complete');
+							},function(){
+								// download error
+								$( "#dialog-working" ).dialog('destroy');
+								alert('Download Error');
+							});
+						});
+						$ul.append($li);
+					}
+					if(nlist.length==0) {
+						var $li = $('<li></li>').html('No note for this slide on the server');
+						$ul.append($li);
+					}
+					$lndiv.html("").append($ul);
+				},
+				error: function() {
+					alert('Fetching note list failed');
+				}
+			});
+		});
 
 		$div.append($idiv);
 		$div.append($ondiv);
 		$div.append($nndiv);
 		$div.append($dndiv);
+		$div.append($lndiv);
 
 	} else {
 		// don't have file
