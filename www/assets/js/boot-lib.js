@@ -205,6 +205,89 @@ function bindLogout() {
 	});
 }
 
+function uploadNote(sid,nname,privacy) {
+	$( "#dialog-working" ).dialog({
+		height: 140,
+		modal: true
+	});
+	// see if there's current note on server, if yes, update it, if no, add instead
+	$.ajax({
+		url: servName+'/api/listnote/'+sid,
+		success: function(data) {
+			if(data.data===false) return window.location.href = "login.html";
+
+			console.log('preparing url');
+
+			console.log(data);
+
+			var own = data.own;
+			var url = "updatenote";
+			if(own.length>0) {
+				// use update
+				url = "updatenote";
+			} else {
+				// use new
+				url = "addnote";
+			}
+
+			url = servName + '/api/' + url + '/' + sid;
+
+			console.log('preparing file path');
+
+			var filename = files[sid] + '.note.' + nname + '.json';
+
+			var fileURI = window.appRootDir.fullPath + '/' + filename;
+
+			console.log('preparing callback');
+
+			// preparing file transfer
+			var win = function(r) {
+			    console.log("Code = " + r.responseCode);
+			    console.log("Response = " + r.response);
+			    console.log("Sent = " + r.bytesSent);
+			    var shnote = 'sharenote';
+			    if(privacy==true) {
+			    	// share
+			    	shnote = 'sharenote';
+			    } else {
+			    	shnote = 'unsharenote';
+			    }
+		    	$.ajax({
+					url: servName+'/api/'+shnote+'/'+sid,
+					success: function(data) { 
+						alert('Upload successful');
+					    $( "#dialog-working" ).dialog('destroy');
+					} 
+				});
+			}
+
+			var fail = function(error) {
+			    alert("An error has occurred: Code = " = error.code);
+			    $( "#dialog-working" ).dialog('destroy');
+			}
+
+			console.log('preparing options');
+
+			var options = new FileUploadOptions();
+			options.fileKey="noteFile";
+			options.fileName=fileURI.substr(fileURI.lastIndexOf('/')+1);
+			options.mimeType="text/plain";
+
+			console.log('new transfer object');
+
+			ft = new FileTransfer();
+
+			console.log('transfer start');
+
+			ft.upload(fileURI, encodeURI(url), win, fail, options);
+
+		},
+		error: function() {
+			alert('Upload error');
+		}
+	});
+}
+
 function openNote(fname,nname) {
 
 	keptname = fname;
@@ -297,12 +380,23 @@ function openSlide() {
 			$ondiv.append('<ul>');
 			var ss = notes[s._id];
 			if(ss) for(var i=0;i<ss.length;i++) {
-				var $li = $('<li></li>').html(ss[i].title).data('fname',files[s._id]).data('nname',ss[i].filename).click(function() {
+				var $span = $('<span></span>').html(ss[i].title).data('fname',files[s._id]).data('nname',ss[i].filename).click(function() {
 					var fname = $(this).data('fname');
 					var nname = $(this).data('nname');
 					console.log('opening '+fname+' . '+nname);
 					openNote(fname,nname);
 				});
+				var $uspan = $('<span></span>').html(' [Upload]').data('sid',s._id).data('nname',ss[i].filename).click(function() {
+					var sid = $(this).data('sid');
+					var nname = $(this).data('nname');
+					var confr = confirm("Are you sure you want to upload note, existing note for this slide will be replaced");
+					if(confr) {
+						var privacy = confirm("Your note will be shared to other by default, choose cancel to limit it to private use");
+						$div.dialog('destroy');
+						uploadNote(sid,nname,privacy);
+					}
+				});
+				var $li = $('<li></li>').append($span).append($uspan);
 				$ondiv.append($li);
 			}
 			$ondiv.append('</ul>');
